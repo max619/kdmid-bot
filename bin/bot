@@ -4,4 +4,4 @@
 
 set -e
 
-docker-compose up bot
+docker run --rm -i --env-file .env --network watir-docker-grid-network -v ./:/app kdmid-bot_bot ruby bot.rb
