@@ -32,7 +32,7 @@ class Bot
     return unless ENV['TELEGRAM_TOKEN']
 
     Telegram::Bot::Client.run(ENV['TELEGRAM_TOKEN']) do |bot|
-      bot.api.send_message(chat_id: ENV['TELEGRAM_CHAT_ID'], text: message)
+      bot.api.send_message(chat_id: ENV['TELEGRAM_CHAT_ID'], text:"[#{ENV.fetch('KDMID_SUBDOMAIN')}] #{message}")
     end
   end
 
@@ -119,6 +119,7 @@ class Bot
   end
 
   def pass_captcha_on_form
+    browser.button(id: 'ctl00_MainContent_ButtonA').wait_until(timeout: 30, &:exists?)
     sleep 3
 
     if browser.alert.exists?
@@ -145,7 +146,15 @@ class Bot
 
     text_field = browser.text_field(id: 'ctl00_MainContent_txtCode')
     text_field.set captcha_code
-  end
+
+    browser.button(id: 'ctl00_MainContent_ButtonA').click
+
+    sleep 3
+    if browser.p(text: /введены неправильно/).exists?
+      notify_user("wrong captcha code #{captcha_code}")
+    end
+
+ end
 
   def click_make_appointment_button
     make_appointment_btn = browser.button(id: 'ctl00_MainContent_ButtonB')
@@ -165,11 +174,8 @@ class Bot
     pass_hcaptcha
     pass_ddgcaptcha
 
-    browser.button(id: 'ctl00_MainContent_ButtonA').wait_until(timeout: 30, &:exists?)
-
     pass_captcha_on_form
 
-    browser.button(id: 'ctl00_MainContent_ButtonA').click
 
     sleep 3
 
@@ -186,7 +192,7 @@ class Bot
 
     save_page
 
-    unless browser.p(text: /Извините, но в настоящий момент/).exists? || browser.p(text: /Bad Gateway/).exists?
+    unless browser.p(text: /Извините, но в настоящий момент/).exists? || unless browser.p(text: /нет свободного времени/).exists? || browser.p(text: /Bad Gateway/).exists?
       notify_user('New time for an appointment found!')
     end
 
